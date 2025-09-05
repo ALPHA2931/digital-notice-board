@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Notice Board - Project Presentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            padding: 60px;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: #e8f4fd;
+        }
+
+        h3 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #f0f8ff;
+        }
+
+        p, li {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            font-size: 1.8rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .tech-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: 500;
+            font-size: 1.2rem;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            text-align: left;
+            max-width: 600px;
+            margin: 20px auto;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            z-index: 1000;
+        }
+
+        .emoji {
+            font-size: 2rem;
+            margin: 0 10px;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        ul {
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4CAF50;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 40px 20px;
+            }
+            
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 2rem; }
+            h3 { font-size: 1.5rem; }
+            p, li { font-size: 1.2rem; }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="currentSlide">1</span> / <span id="totalSlides">15</span>
+        </div>
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>🗂️ Digital Notice Board</h1>
+            <p class="subtitle">Modern Web-Based Announcement System</p>
+            <p style="margin-top: 50px; font-size: 1.2rem;">A comprehensive solution for digital notice management</p>
+        </div>
+
+        <!-- Slide 2: Project Overview -->
+        <div class="slide">
+            <h2>📋 Project Overview</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>What is it?</h3>
+                    <p>A modern, responsive web application for displaying and managing digital announcements in real-time</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Key Benefits</h3>
+                    <ul>
+                        <li>Paperless Solution</li>
+                        <li>Real-time Updates</li>
+                        <li>Cross-platform Support</li>
+                        <li>No Server Required</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Key Features -->
+        <div class="slide">
+            <h2>✨ Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Core Functionality</h3>
+                    <ul>
+                        <li>✅ CRUD Operations</li>
+                        <li>✅ Categorization System</li>
+                        <li>✅ Priority Levels</li>
+                        <li>✅ Responsive Design</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>Advanced Features</h3>
+                    <ul>
+                        <li>🎨 Modern UI/UX</li>
+                        <li>💾 Data Persistence</li>
+                        <li>🎯 Toast Notifications</li>
+                        <li>⌨️ Keyboard Shortcuts</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Technology Stack -->
+        <div class="slide">
+            <h2>🏗️ Technology Stack</h2>
+            <div class="tech-stack">
+                <div class="tech-item">HTML5</div>
+                <div class="tech-item">CSS3</div>
+                <div class="tech-item">JavaScript ES6+</div>
+                <div class="tech-item">LocalStorage</div>
+                <div class="tech-item">Font Awesome</div>
+                <div class="tech-item">Google Fonts</div>
+            </div>
+            <h3>Architecture Pattern</h3>
+            <ul>
+                <li>Single Class Controller</li>
+                <li>Event-driven Design</li>
+                <li>Template-based Rendering</li>
+                <li>Local Storage Pattern</li>
+            </ul>
+        </div>
+
+        <!-- Slide 5: Data Model -->
+        <div class="slide">
+            <h2>📊 Data Model</h2>
+            <div class="code-block">
+{
+  id: string,           // Unique identifier
+  title: string,        // Notice title
+  content: string,      // Notice description
+  category: string,     // general|urgent|announcement|event|reminder
+  priority: string,     // low|medium|high
+  createdAt: string,    // ISO timestamp
+  updatedAt?: string    // ISO timestamp (for edits)
+}
+            </div>
+            <p><strong>Categories:</strong> General, Urgent, Announcement, Event, Reminder</p>
+            <p><strong>Priorities:</strong> Low (green), Medium (orange), High (red)</p>
+        </div>
+
+        <!-- Slide 6: User Interface -->
+        <div class="slide">
+            <h2>🎨 User Interface Design</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Design Principles</h3>
+                    <ul>
+                        <li>Modern Aesthetics</li>
+                        <li>Intuitive Navigation</li>
+                        <li>Visual Hierarchy</li>
+                        <li>Responsive Layout</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>Responsive Breakpoints</h3>
+                    <ul>
+                        <li>Desktop: 1200px+</li>
+                        <li>Tablet: 768px</li>
+                        <li>Mobile: 480px</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Getting Started -->
+        <div class="slide">
+            <h2>🚀 Getting Started</h2>
+            <div class="code-block">
+# Clone the repository
+git clone https://github.com/ALPHA2931/digital-notice-board.git
+
+# Navigate to project directory
+cd digital-notice-board
+
+# Install dependencies (optional)
+npm install
+
+# Start development server
+npm start
+            </div>
+            <p style="margin-top: 30px;"><strong>Or simply:</strong> Open <span class="highlight">index.html</span> in any modern web browser!</p>
+        </div>
+
+        <!-- Slide 8: Usage Scenarios -->
+        <div class="slide">
+            <h2>📱 Usage Scenarios</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>🏫 Educational Institutions</h3>
+                    <ul>
+                        <li>Exam Schedules</li>
+                        <li>Event Announcements</li>
+                        <li>Administrative Notices</li>
+                        <li>Emergency Alerts</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>🏢 Corporate Environments</h3>
+                    <ul>
+                        <li>Team Updates</li>
+                        <li>Company News</li>
+                        <li>Policy Changes</li>
+                        <li>Event Notifications</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Technical Implementation -->
+        <div class="slide">
+            <h2>🛠️ Technical Implementation</h2>
+            <div class="code-block">
+class NoticeBoard {
+  constructor()     // Initialize application
+  loadNotices()     // Load from localStorage
+  saveNotices()     // Persist to localStorage
+  renderNotices()   // Update UI display
+  openModal()       // Add/edit interface
+  deleteNotice()    // Remove functionality
+}
+            </div>
+            <h3>Storage System</h3>
+            <ul>
+                <li>localStorage with JSON serialization</li>
+                <li>Error handling for corrupted data</li>
+                <li>Automatic sample data generation</li>
+            </ul>
+        </div>
+
+        <!-- Slide 10: Project Metrics -->
+        <div class="slide">
+            <h2>📈 Project Metrics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">7</span>
+                    Core Files
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">1,120</span>
+                    Lines of Code
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">15+</span>
+                    Features
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">&lt;1s</span>
+                    Load Time
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">&lt;100KB</span>
+                    File Size
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">100%</span>
+                    Responsive
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Future Enhancements -->
+        <div class="slide">
+            <h2>🔮 Future Enhancements</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Planned Features</h3>
+                    <ul>
+                        <li>🔍 Search Functionality</li>
+                        <li>🏷️ Custom Tag System</li>
+                        <li>📅 Date Filtering</li>
+                        <li>🌙 Dark Mode</li>
+                        <li>📊 Analytics Dashboard</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>Technical Improvements</h3>
+                    <ul>
+                        <li>PWA Support</li>
+                        <li>Database Integration</li>
+                        <li>User Authentication</li>
+                        <li>API Integration</li>
+                        <li>Mobile App</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Key Advantages -->
+        <div class="slide">
+            <h2>🌟 Key Advantages</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>For Users</h3>
+                    <ul>
+                        <li>Easy to Use</li>
+                        <li>Fast Performance</li>
+                        <li>Always Available</li>
+                        <li>Cross-platform</li>
+                        <li>No Installation Required</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>For Developers</h3>
+                    <ul>
+                        <li>Simple Architecture</li>
+                        <li>No Framework Dependencies</li>
+                        <li>Well Documented</li>
+                        <li>Easily Extensible</li>
+                        <li>Modern Standards</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Demo -->
+        <div class="slide">
+            <h2>🎯 Live Demo</h2>
+            <div style="text-align: center; margin: 50px 0;">
+                <div style="background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; max-width: 600px; margin: 0 auto;">
+                    <h3 style="margin-bottom: 30px;">Ready to see it in action?</h3>
+                    <p style="font-size: 1.6rem; margin-bottom: 30px;">Open <span class="highlight">index.html</span> in your browser</p>
+                    <p style="font-size: 1.2rem; opacity: 0.8;">Or visit the GitHub repository to explore the code</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Conclusion -->
+        <div class="slide">
+            <h2>🎯 Conclusion</h2>
+            <h3>Project Success</h3>
+            <ul style="font-size: 1.3rem;">
+                <li>✅ <strong>Fully Functional</strong> - Complete CRUD operations</li>
+                <li>✅ <strong>Modern Design</strong> - Contemporary UI/UX</li>
+                <li>✅ <strong>Responsive</strong> - Works on all devices</li>
+                <li>✅ <strong>Well Architected</strong> - Clean, maintainable code</li>
+                <li>✅ <strong>Production Ready</strong> - Deployed on GitHub</li>
+            </ul>
+            <p style="margin-top: 40px; font-size: 1.4rem; font-style: italic;">
+                "Modern web development meets practical utility"
+            </p>
+        </div>
+
+        <!-- Slide 15: Thank You -->
+        <div class="slide">
+            <h1>Thank You! 🙏</h1>
+            <h3 style="margin: 40px 0;">Questions & Discussion</h3>
+            <div style="background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; max-width: 700px; margin: 0 auto;">
+                <p style="font-size: 1.4rem; margin-bottom: 20px;">
+                    <strong>GitHub Repository:</strong><br>
+                    <span class="highlight">https://github.com/ALPHA2931/digital-notice-board</span>
+                </p>
+                <p style="font-size: 1.2rem; margin-bottom: 15px;">
+                    <strong>Developer:</strong> Shubh (@ALPHA2931)
+                </p>
+                <p style="font-size: 1.2rem;">
+                    <strong>Project:</strong> Digital Notice Board v1.0
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn">← Previous</button>
+        <button class="nav-btn" id="nextBtn">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function showSlide(n) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[n].classList.add('active');
+            document.getElementById('currentSlide').textContent = n + 1;
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = n === 0;
+            document.getElementById('nextBtn').disabled = n === totalSlides - 1;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('nextBtn').addEventListener('click', nextSlide);
+        document.getElementById('prevBtn').addEventListener('click', prevSlide);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
