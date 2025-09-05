@@ -1,0 +1,32 @@
+{
+  "name": "digital-notice-board",
+  "version": "1.0.0",
+  "description": "A web-based digital notice board application for displaying announcements and messages",
+  "main": "index.html",
+  "scripts": {
+    "start": "live-server --port=3000",
+    "dev": "live-server --port=3000 --watch=."
+  },
+  "keywords": [
+    "notice-board",
+    "digital",
+    "announcements",
+    "web-app",
+    "javascript",
+    "html",
+    "css"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/digital-notice-board.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/digital-notice-board/issues"
+  },
+  "homepage": "https://github.com/yourusername/digital-notice-board#readme"
+}
