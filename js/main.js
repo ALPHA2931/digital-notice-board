@@ -5,13 +5,12 @@ class NoticeBoard {
         this.notices = [];
         this.currentEditId = null;
         
-        // Firebase integration
-        this.firebaseManager = null;
-        this.isRealTimeEnabled = false;
+        // Shared backend for real multi-user functionality
+        this.sharedBackend = null;
+        this.isSharedMode = false;
         
         this.init();
-        this.initializeFirebase();
-        this.loadSampleData();
+        this.initializeSharedBackend();
     }
 
     init() {
@@ -48,31 +47,64 @@ class NoticeBoard {
         this.renderNotices();
     }
 
-    async initializeFirebase() {
-        // Wait a moment for Firebase to load
-        setTimeout(() => {
-            if (window.isFirebaseEnabled && window.FirebaseNoticeManager) {
+    async initializeSharedBackend() {
+        // Wait a moment for scripts to load
+        setTimeout(async () => {
+            if (window.WorkingSharedBackend) {
                 try {
-                    this.firebaseManager = new window.FirebaseNoticeManager();
-                    this.isRealTimeEnabled = true;
-                    this.setupRealTimeSync();
-                    this.updateSyncStatus('connected', 'Real-time Sync');
-                    this.showToast('🔥 Real-time sync enabled! Changes will be shared with all users.');
+                    console.log('🌍 Initializing shared backend...');
+                    this.sharedBackend = new window.WorkingSharedBackend();
+                    this.isSharedMode = true;
+                    
+                    // Load notices from shared backend
+                    await this.loadNoticesFromSharedBackend();
+                    
+                    this.updateSyncStatus('connected', 'Shared Mode');
+                    this.showToast('🌍 Multi-user mode enabled! Notices are shared with all users.');
+                    
                 } catch (error) {
-                    console.error('Firebase setup failed:', error);
-                    this.isRealTimeEnabled = false;
+                    console.error('Shared backend setup failed:', error);
+                    this.isSharedMode = false;
                     this.updateSyncStatus('disconnected', 'Local Mode');
-                    // Make sure we render notices even if Firebase fails
+                    this.loadSampleData();
                     this.renderNotices();
                 }
             } else {
-                this.isRealTimeEnabled = false;
+                console.log('Shared backend not available - using local mode');
+                this.isSharedMode = false;
                 this.updateSyncStatus('disconnected', 'Local Mode');
-                console.log('Firebase not available - using localStorage only');
-                // Make sure we render notices in local mode
+                this.loadSampleData();
                 this.renderNotices();
             }
         }, 1000);
+    }
+
+    async loadNoticesFromSharedBackend() {
+        if (!this.sharedBackend) return;
+        
+        try {
+            this.updateSyncStatus('connecting', 'Loading...');
+            
+            // Try to get notices from shared backend
+            let notices = await this.sharedBackend.getNotices();
+            
+            // If no notices exist, initialize with sample data
+            if (notices.length === 0) {
+                notices = await this.sharedBackend.initializeWithSampleData();
+            }
+            
+            this.notices = notices;
+            this.renderNotices();
+            
+            this.updateSyncStatus('connected', 'Shared Mode');
+            console.log(`✅ Loaded ${notices.length} shared notices`);
+            
+        } catch (error) {
+            console.error('Failed to load from shared backend:', error);
+            this.updateSyncStatus('disconnected', 'Local Mode');
+            this.loadSampleData();
+            this.renderNotices();
+        }
     }
 
     setupRealTimeSync() {
@@ -359,24 +391,41 @@ class NoticeBoard {
             this.notices.unshift(notice); // Add to beginning
         }
 
-        // Always save to localStorage first (backup)
-        this.saveNotices();
-        
-        // Try to save to Firebase if available
-        if (this.isRealTimeEnabled && this.firebaseManager && notice) {
+        // Use shared backend if available
+        if (this.isSharedMode && this.sharedBackend && notice) {
             try {
-                await this.firebaseManager.saveNotice(notice);
-                this.showToast(
-                    '🌍 ' + (this.currentEditId ? 'Notice updated and synced!' : 'Notice added and synced!')
-                );
-            } catch (error) {
-                console.error('Failed to sync with Firebase:', error);
-                this.showToast('Saved locally - sync failed');
-                // Render locally since Firebase sync failed
+                if (this.currentEditId) {
+                    // Update existing notice
+                    await this.sharedBackend.updateNotice(notice);
+                    this.showToast('🌍 Notice updated and shared with all users!');
+                } else {
+                    // Add new notice
+                    await this.sharedBackend.addNotice(notice);
+                    this.showToast('🌍 Notice added and shared with all users!');
+                }
+                
+                // Update local notices array to reflect the change immediately
+                if (this.currentEditId) {
+                    const index = this.notices.findIndex(n => n.id === this.currentEditId);
+                    if (index !== -1) {
+                        this.notices[index] = notice;
+                    }
+                } else {
+                    this.notices.unshift(notice);
+                }
+                
                 this.renderNotices();
+                
+            } catch (error) {
+                console.error('Failed to sync with shared backend:', error);
+                // Fall back to local storage
+                this.saveNotices();
+                this.renderNotices();
+                this.showToast('Saved locally - sharing failed');
             }
         } else {
-            // Firebase not available, use localStorage only
+            // Shared backend not available, use localStorage only
+            this.saveNotices();
             this.renderNotices();
             this.showToast(this.currentEditId ? 'Notice updated!' : 'Notice added!');
         }
@@ -389,22 +438,22 @@ class NoticeBoard {
             // Remove from local array
             this.notices = this.notices.filter(notice => notice.id !== id);
             
-            // Always save to localStorage first (backup)
-            this.saveNotices();
-            
-            // Try to delete from Firebase if available
-            if (this.isRealTimeEnabled && this.firebaseManager) {
+            // Use shared backend if available
+            if (this.isSharedMode && this.sharedBackend) {
                 try {
-                    await this.firebaseManager.deleteNotice(id);
-                    this.showToast('🌍 Notice deleted and synced!');
-                } catch (error) {
-                    console.error('Failed to delete from Firebase:', error);
-                    this.showToast('Deleted locally - sync failed');
-                    // Render locally since Firebase sync failed
+                    await this.sharedBackend.deleteNotice(id);
+                    this.showToast('🌍 Notice deleted and updated for all users!');
                     this.renderNotices();
+                } catch (error) {
+                    console.error('Failed to delete from shared backend:', error);
+                    // Fall back to local storage
+                    this.saveNotices();
+                    this.renderNotices();
+                    this.showToast('Deleted locally - sharing failed');
                 }
             } else {
-                // Firebase not available, use localStorage only
+                // Shared backend not available, use localStorage only
+                this.saveNotices();
                 this.renderNotices();
                 this.showToast('Notice deleted!');
             }
@@ -649,6 +698,9 @@ let noticeBoard;
 
 document.addEventListener('DOMContentLoaded', () => {
     noticeBoard = new NoticeBoard();
+    
+    // Make globally available for shared backend
+    window.noticeBoard = noticeBoard;
     
     // Add some helpful console messages
     console.log('Digital Notice Board initialized!');
