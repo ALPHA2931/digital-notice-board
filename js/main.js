@@ -15,6 +15,17 @@ class NoticeBoard {
         this.modalOverlay = document.getElementById('modalOverlay');
         this.modalTitle = document.getElementById('modalTitle');
         this.noticeForm = document.getElementById('noticeForm');
+        this.searchInput = document.getElementById('searchInput');
+        this.clearSearchBtn = document.getElementById('clearSearch');
+        this.categoryFilter = document.getElementById('categoryFilter');
+        this.priorityFilter = document.getElementById('priorityFilter');
+        this.exportBtn = document.getElementById('exportBtn');
+        this.importFile = document.getElementById('importFile');
+        
+        // Current filters
+        this.currentSearch = '';
+        this.currentCategoryFilter = 'all';
+        this.currentPriorityFilter = 'all';
         
         // Bind event listeners
         this.bindEventListeners();
@@ -50,6 +61,44 @@ class NoticeBoard {
         this.noticeForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleFormSubmit();
+        });
+
+        // Search functionality
+        this.searchInput.addEventListener('input', (e) => {
+            this.currentSearch = e.target.value.trim();
+            this.updateClearButton();
+            this.applyFilters();
+        });
+
+        this.clearSearchBtn.addEventListener('click', () => {
+            this.searchInput.value = '';
+            this.currentSearch = '';
+            this.updateClearButton();
+            this.applyFilters();
+        });
+
+        // Filter functionality
+        this.categoryFilter.addEventListener('change', (e) => {
+            this.currentCategoryFilter = e.target.value;
+            this.applyFilters();
+        });
+
+        this.priorityFilter.addEventListener('change', (e) => {
+            this.currentPriorityFilter = e.target.value;
+            this.applyFilters();
+        });
+
+        // Export/Import functionality
+        this.exportBtn.addEventListener('click', () => {
+            this.exportNotices();
+        });
+
+        this.importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.importNotices(file);
+                e.target.value = ''; // Reset file input
+            }
         });
 
         // Keyboard shortcuts
@@ -207,23 +256,41 @@ class NoticeBoard {
         }
     }
 
-    renderNotices() {
-        if (this.notices.length === 0) {
-            this.noticesGrid.innerHTML = '';
-            this.emptyState.style.display = 'block';
-            return;
+    updateClearButton() {
+        this.clearSearchBtn.style.display = this.currentSearch ? 'block' : 'none';
+    }
+
+    applyFilters() {
+        let filteredNotices = [...this.notices];
+
+        // Apply search filter
+        if (this.currentSearch) {
+            const searchLower = this.currentSearch.toLowerCase();
+            filteredNotices = filteredNotices.filter(notice => 
+                notice.title.toLowerCase().includes(searchLower) ||
+                notice.content.toLowerCase().includes(searchLower)
+            );
         }
 
-        this.emptyState.style.display = 'none';
-        
-        // Sort notices by creation date (newest first)
-        const sortedNotices = [...this.notices].sort((a, b) => 
-            new Date(b.createdAt) - new Date(a.createdAt)
-        );
+        // Apply category filter
+        if (this.currentCategoryFilter !== 'all') {
+            filteredNotices = filteredNotices.filter(notice => 
+                notice.category === this.currentCategoryFilter
+            );
+        }
 
-        this.noticesGrid.innerHTML = sortedNotices.map(notice => 
-            this.createNoticeHTML(notice)
-        ).join('');
+        // Apply priority filter
+        if (this.currentPriorityFilter !== 'all') {
+            filteredNotices = filteredNotices.filter(notice => 
+                notice.priority === this.currentPriorityFilter
+            );
+        }
+
+        this.renderFilteredNotices(filteredNotices);
+    }
+
+    renderNotices() {
+        this.applyFilters(); // Use filtering instead of direct render
     }
 
     createNoticeHTML(notice) {
@@ -331,11 +398,32 @@ class NoticeBoard {
 
     renderFilteredNotices(notices) {
         if (notices.length === 0) {
-            this.noticesGrid.innerHTML = '<div class="no-results">No notices found.</div>';
+            if (this.notices.length === 0) {
+                // No notices at all
+                this.noticesGrid.innerHTML = '';
+                this.emptyState.style.display = 'block';
+            } else {
+                // No notices match current filters
+                this.emptyState.style.display = 'none';
+                this.noticesGrid.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-search"></i>
+                        <h3>No notices found</h3>
+                        <p>Try adjusting your search or filter criteria.</p>
+                    </div>
+                `;
+            }
             return;
         }
 
-        this.noticesGrid.innerHTML = notices.map(notice => 
+        this.emptyState.style.display = 'none';
+        
+        // Sort notices by creation date (newest first)
+        const sortedNotices = [...notices].sort((a, b) => 
+            new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        this.noticesGrid.innerHTML = sortedNotices.map(notice => 
             this.createNoticeHTML(notice)
         ).join('');
     }
@@ -353,18 +441,48 @@ class NoticeBoard {
         linkElement.click();
     }
 
-    // Import notices (for future enhancement)
+    // Import notices
     importNotices(file) {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const importedNotices = JSON.parse(e.target.result);
-                this.notices = [...this.notices, ...importedNotices];
+                const importedData = JSON.parse(e.target.result);
+                
+                // Validate that importedData is an array
+                if (!Array.isArray(importedData)) {
+                    throw new Error('Invalid file format: Expected an array of notices.');
+                }
+                
+                // Validate each notice has required fields
+                const validNotices = importedData.filter(notice => 
+                    notice.title && notice.content && notice.category && notice.priority
+                );
+                
+                if (validNotices.length === 0) {
+                    throw new Error('No valid notices found in the file.');
+                }
+                
+                // Add unique IDs and timestamps to imported notices
+                const processedNotices = validNotices.map(notice => ({
+                    ...notice,
+                    id: this.generateId(),
+                    createdAt: notice.createdAt || new Date().toISOString(),
+                    imported: true
+                }));
+                
+                // Merge with existing notices
+                this.notices = [...this.notices, ...processedNotices];
                 this.saveNotices();
                 this.renderNotices();
-                this.showToast('Notices imported successfully!');
+                
+                this.showToast(`Successfully imported ${processedNotices.length} notice${processedNotices.length !== 1 ? 's' : ''}!`);
+                
+                if (validNotices.length < importedData.length) {
+                    this.showToast(`Note: ${importedData.length - validNotices.length} invalid notice${importedData.length - validNotices.length !== 1 ? 's were' : ' was'} skipped.`);
+                }
             } catch (error) {
-                alert('Error importing notices. Please check the file format.');
+                console.error('Import error:', error);
+                alert(`Error importing notices: ${error.message}`);
             }
         };
         reader.readAsText(file);

@@ -23,6 +23,46 @@
             </div>
         </header>
 
+        <!-- Search and Filter Section -->
+        <div class="controls-section">
+            <div class="search-filter-container">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search notices...">
+                    <button id="clearSearch" class="clear-search-btn" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="filter-controls">
+                    <select id="categoryFilter" class="filter-select">
+                        <option value="all">All Categories</option>
+                        <option value="general">General</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="announcement">Announcement</option>
+                        <option value="event">Event</option>
+                        <option value="reminder">Reminder</option>
+                    </select>
+                    <select id="priorityFilter" class="filter-select">
+                        <option value="all">All Priorities</option>
+                        <option value="low">Low Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="high">High Priority</option>
+                    </select>
+                    <div class="extra-controls">
+                        <button id="exportBtn" class="control-btn" title="Export notices">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <label for="importFile" class="control-btn import-btn" title="Import notices">
+                            <i class="fas fa-upload"></i>
+                            Import
+                            <input type="file" id="importFile" accept=".json" style="display: none;">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <main class="main-content">
             <div class="notices-grid" id="noticesGrid">
                 <!-- Sample notices will be generated here -->
