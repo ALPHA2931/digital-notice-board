@@ -60,11 +60,17 @@ class NoticeBoard {
                     this.showToast('🔥 Real-time sync enabled! Changes will be shared with all users.');
                 } catch (error) {
                     console.error('Firebase setup failed:', error);
+                    this.isRealTimeEnabled = false;
                     this.updateSyncStatus('disconnected', 'Local Mode');
+                    // Make sure we render notices even if Firebase fails
+                    this.renderNotices();
                 }
             } else {
+                this.isRealTimeEnabled = false;
                 this.updateSyncStatus('disconnected', 'Local Mode');
                 console.log('Firebase not available - using localStorage only');
+                // Make sure we render notices in local mode
+                this.renderNotices();
             }
         }, 1000);
     }
@@ -313,6 +319,8 @@ class NoticeBoard {
     }
 
     async handleFormSubmit() {
+        console.log('Form submission started');
+        
         const formData = new FormData(this.noticeForm);
         const noticeData = {
             title: formData.get('title').trim(),
@@ -320,6 +328,8 @@ class NoticeBoard {
             category: formData.get('category'),
             priority: formData.get('priority')
         };
+        
+        console.log('Notice data:', noticeData);
 
         // Validation
         if (!noticeData.title || !noticeData.content) {
@@ -349,7 +359,10 @@ class NoticeBoard {
             this.notices.unshift(notice); // Add to beginning
         }
 
-        // Save to Firebase if available
+        // Always save to localStorage first (backup)
+        this.saveNotices();
+        
+        // Try to save to Firebase if available
         if (this.isRealTimeEnabled && this.firebaseManager && notice) {
             try {
                 await this.firebaseManager.saveNotice(notice);
@@ -359,16 +372,13 @@ class NoticeBoard {
             } catch (error) {
                 console.error('Failed to sync with Firebase:', error);
                 this.showToast('Saved locally - sync failed');
+                // Render locally since Firebase sync failed
+                this.renderNotices();
             }
         } else {
-            // Fallback to localStorage
-            this.saveNotices();
-            this.showToast(this.currentEditId ? 'Notice updated!' : 'Notice added!');
-        }
-
-        // Only render if not using Firebase (Firebase will trigger render via listener)
-        if (!this.isRealTimeEnabled) {
+            // Firebase not available, use localStorage only
             this.renderNotices();
+            this.showToast(this.currentEditId ? 'Notice updated!' : 'Notice added!');
         }
         
         this.closeModal();
@@ -379,7 +389,10 @@ class NoticeBoard {
             // Remove from local array
             this.notices = this.notices.filter(notice => notice.id !== id);
             
-            // Delete from Firebase if available
+            // Always save to localStorage first (backup)
+            this.saveNotices();
+            
+            // Try to delete from Firebase if available
             if (this.isRealTimeEnabled && this.firebaseManager) {
                 try {
                     await this.firebaseManager.deleteNotice(id);
@@ -387,16 +400,13 @@ class NoticeBoard {
                 } catch (error) {
                     console.error('Failed to delete from Firebase:', error);
                     this.showToast('Deleted locally - sync failed');
+                    // Render locally since Firebase sync failed
+                    this.renderNotices();
                 }
             } else {
-                // Fallback to localStorage
-                this.saveNotices();
-                this.showToast('Notice deleted!');
-            }
-            
-            // Only render if not using Firebase (Firebase will trigger render via listener)
-            if (!this.isRealTimeEnabled) {
+                // Firebase not available, use localStorage only
                 this.renderNotices();
+                this.showToast('Notice deleted!');
             }
         }
     }
