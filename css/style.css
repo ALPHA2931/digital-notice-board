@@ -50,6 +50,58 @@ body {
     color: #667eea;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Sync Status Indicator */
+.sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+}
+
+.sync-status.connected {
+    background: rgba(46, 204, 113, 0.1);
+    color: #27ae60;
+}
+
+.sync-status.connecting {
+    background: rgba(241, 196, 15, 0.1);
+    color: #f39c12;
+}
+
+.sync-status.disconnected {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+}
+
+.sync-status i {
+    font-size: 0.9rem;
+}
+
+.online-users {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    font-weight: 500;
+}
+
+.online-users i {
+    font-size: 0.8rem;
+}
+
 .add-notice-btn {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
@@ -543,6 +595,17 @@ body {
     .header-content {
         flex-direction: column;
         text-align: center;
+    }
+    
+    .header-right {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .sync-status {
+        font-size: 0.8rem;
+        justify-content: center;
     }
     
     .title {

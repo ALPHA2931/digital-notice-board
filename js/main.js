@@ -4,7 +4,13 @@ class NoticeBoard {
     constructor() {
         this.notices = [];
         this.currentEditId = null;
+        
+        // Firebase integration
+        this.firebaseManager = null;
+        this.isRealTimeEnabled = false;
+        
         this.init();
+        this.initializeFirebase();
         this.loadSampleData();
     }
 
@@ -22,6 +28,13 @@ class NoticeBoard {
         this.exportBtn = document.getElementById('exportBtn');
         this.importFile = document.getElementById('importFile');
         
+        // Sync status elements
+        this.syncStatus = document.getElementById('syncStatus');
+        this.syncIcon = document.getElementById('syncIcon');
+        this.syncText = document.getElementById('syncText');
+        this.onlineUsers = document.getElementById('onlineUsers');
+        this.userCount = document.getElementById('userCount');
+        
         // Current filters
         this.currentSearch = '';
         this.currentCategoryFilter = 'all';
@@ -33,6 +46,101 @@ class NoticeBoard {
         // Load notices from localStorage if available
         this.loadNotices();
         this.renderNotices();
+    }
+
+    async initializeFirebase() {
+        // Wait a moment for Firebase to load
+        setTimeout(() => {
+            if (window.isFirebaseEnabled && window.FirebaseNoticeManager) {
+                try {
+                    this.firebaseManager = new window.FirebaseNoticeManager();
+                    this.isRealTimeEnabled = true;
+                    this.setupRealTimeSync();
+                    this.updateSyncStatus('connected', 'Real-time Sync');
+                    this.showToast('🔥 Real-time sync enabled! Changes will be shared with all users.');
+                } catch (error) {
+                    console.error('Firebase setup failed:', error);
+                    this.updateSyncStatus('disconnected', 'Local Mode');
+                }
+            } else {
+                this.updateSyncStatus('disconnected', 'Local Mode');
+                console.log('Firebase not available - using localStorage only');
+            }
+        }, 1000);
+    }
+
+    setupRealTimeSync() {
+        if (!this.firebaseManager) return;
+        
+        // Listen for real-time notice changes
+        this.firebaseManager.onNoticesChange((notices) => {
+            this.notices = notices;
+            this.firebaseManager.syncWithLocalStorage(notices);
+            this.renderNotices();
+        });
+        
+        // Listen for online users count
+        this.firebaseManager.onOnlineUsersChange((count) => {
+            this.updateOnlineUsers(count);
+        });
+        
+        // Load initial data from Firebase
+        this.loadNoticesFromFirebase();
+    }
+
+    async loadNoticesFromFirebase() {
+        if (!this.firebaseManager) return;
+        
+        try {
+            this.updateSyncStatus('connecting', 'Syncing...');
+            const firebaseNotices = await this.firebaseManager.getNotices();
+            
+            if (firebaseNotices.length > 0) {
+                this.notices = firebaseNotices;
+                this.renderNotices();
+            } else if (this.notices.length > 0) {
+                // Upload local notices to Firebase if Firebase is empty
+                for (const notice of this.notices) {
+                    await this.firebaseManager.saveNotice(notice);
+                }
+            }
+            
+            this.updateSyncStatus('connected', 'Real-time Sync');
+        } catch (error) {
+            console.error('Failed to load from Firebase:', error);
+            this.updateSyncStatus('disconnected', 'Sync Failed');
+        }
+    }
+
+    updateSyncStatus(status, text) {
+        if (!this.syncStatus) return;
+        
+        this.syncStatus.className = `sync-status ${status}`;
+        this.syncText.textContent = text;
+        
+        // Update icon based on status
+        switch (status) {
+            case 'connected':
+                this.syncIcon.className = 'fas fa-sync-alt';
+                break;
+            case 'connecting':
+                this.syncIcon.className = 'fas fa-spinner fa-spin';
+                break;
+            case 'disconnected':
+                this.syncIcon.className = 'fas fa-wifi-slash';
+                break;
+        }
+    }
+
+    updateOnlineUsers(count) {
+        if (!this.onlineUsers) return;
+        
+        if (count > 1) {
+            this.onlineUsers.style.display = 'flex';
+            this.userCount.textContent = count;
+        } else {
+            this.onlineUsers.style.display = 'none';
+        }
     }
 
     bindEventListeners() {
@@ -204,7 +312,7 @@ class NoticeBoard {
         this.noticeForm.reset();
     }
 
-    handleFormSubmit() {
+    async handleFormSubmit() {
         const formData = new FormData(this.noticeForm);
         const noticeData = {
             title: formData.get('title').trim(),
@@ -219,40 +327,77 @@ class NoticeBoard {
             return;
         }
 
+        let notice;
         if (this.currentEditId) {
             // Update existing notice
             const noticeIndex = this.notices.findIndex(n => n.id === this.currentEditId);
             if (noticeIndex !== -1) {
-                this.notices[noticeIndex] = {
+                notice = {
                     ...this.notices[noticeIndex],
                     ...noticeData,
                     updatedAt: new Date().toISOString()
                 };
+                this.notices[noticeIndex] = notice;
             }
         } else {
             // Create new notice
-            const newNotice = {
+            notice = {
                 id: this.generateId(),
                 ...noticeData,
                 createdAt: new Date().toISOString()
             };
-            this.notices.unshift(newNotice); // Add to beginning
+            this.notices.unshift(notice); // Add to beginning
         }
 
-        this.saveNotices();
-        this.renderNotices();
-        this.closeModal();
+        // Save to Firebase if available
+        if (this.isRealTimeEnabled && this.firebaseManager && notice) {
+            try {
+                await this.firebaseManager.saveNotice(notice);
+                this.showToast(
+                    '🌍 ' + (this.currentEditId ? 'Notice updated and synced!' : 'Notice added and synced!')
+                );
+            } catch (error) {
+                console.error('Failed to sync with Firebase:', error);
+                this.showToast('Saved locally - sync failed');
+            }
+        } else {
+            // Fallback to localStorage
+            this.saveNotices();
+            this.showToast(this.currentEditId ? 'Notice updated!' : 'Notice added!');
+        }
+
+        // Only render if not using Firebase (Firebase will trigger render via listener)
+        if (!this.isRealTimeEnabled) {
+            this.renderNotices();
+        }
         
-        // Show success message
-        this.showToast(this.currentEditId ? 'Notice updated successfully!' : 'Notice added successfully!');
+        this.closeModal();
     }
 
-    deleteNotice(id) {
+    async deleteNotice(id) {
         if (confirm('Are you sure you want to delete this notice?')) {
+            // Remove from local array
             this.notices = this.notices.filter(notice => notice.id !== id);
-            this.saveNotices();
-            this.renderNotices();
-            this.showToast('Notice deleted successfully!');
+            
+            // Delete from Firebase if available
+            if (this.isRealTimeEnabled && this.firebaseManager) {
+                try {
+                    await this.firebaseManager.deleteNotice(id);
+                    this.showToast('🌍 Notice deleted and synced!');
+                } catch (error) {
+                    console.error('Failed to delete from Firebase:', error);
+                    this.showToast('Deleted locally - sync failed');
+                }
+            } else {
+                // Fallback to localStorage
+                this.saveNotices();
+                this.showToast('Notice deleted!');
+            }
+            
+            // Only render if not using Firebase (Firebase will trigger render via listener)
+            if (!this.isRealTimeEnabled) {
+                this.renderNotices();
+            }
         }
     }
 
